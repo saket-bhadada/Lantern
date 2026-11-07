@@ -1,0 +1,1 @@
+Add this capability to Lantern: <describe it>. Follow docs/EXTENSIONS.md exactly: one file in src/lantern/addons/, one registry line, one test file, one row in the add-on registry table, one task in tasks/TASKS.md. Do not modify core files beyond the registry line. Must work offline or declare needs_internet. Show me the plan in five lines before coding.

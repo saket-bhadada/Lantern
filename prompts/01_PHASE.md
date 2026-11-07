@@ -1,0 +1,1 @@
+Continue with the next unticked phase in tasks/TASKS.md. Read only AGENTS.md, tasks/TASKS.md, docs/DECISIONS.md, and docs/EXTENSIONS.md. Make small targeted edits, write tests first, tick tasks with evidence, and end with the Walkthrough. Stop at any STOP marker.

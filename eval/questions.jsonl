@@ -1,0 +1,20 @@
+{"id": 1, "category": "factual", "question": "What is the port number for the Mattermost REST API by default?", "expected": "8065"}
+{"id": 2, "category": "factual", "question": "What license is the sandbox-quantum/switch repo released under?", "expected": "Apache 2.0 with Commons Clause"}
+{"id": 3, "category": "command", "question": "How do you permanently delete untracked files and directories in git?", "expected": "git clean -fd"}
+{"id": 4, "category": "factual", "question": "What endpoint does Ollama expose for generating chat completions?", "expected": "/api/chat"}
+{"id": 5, "category": "command", "question": "What command undoes the most recent git commit while keeping changes staged?", "expected": "git reset --soft HEAD~1"}
+{"id": 6, "category": "reasoning", "question": "Why should an offline-first AI teammate reject chat text from executing tools directly?", "expected": "prompt injection"}
+{"id": 7, "category": "factual", "question": "What transport does the Switch Agent Protocol use for downstream events?", "expected": "SSE or Server-Sent Events"}
+{"id": 8, "category": "factual", "question": "What header format does Switch expect for custom agent API authentication?", "expected": "Authorization: ApiKey"}
+{"id": 9, "category": "code", "question": "In Python, which built-in module provides lightweight transactional disk-backed storage?", "expected": "sqlite3"}
+{"id": 10, "category": "command", "question": "How do you inspect the current running Docker containers with port mappings?", "expected": "docker ps"}
+{"id": 11, "category": "factual", "question": "In SQLite WAL mode, what does WAL stand for?", "expected": "Write-Ahead Logging"}
+{"id": 12, "category": "reasoning", "question": "What is the risk of using an in-place message edit rather than a thread reply for verification follow-ups?", "expected": "missed notification or silent change"}
+{"id": 13, "category": "command", "question": "What git command reverts a specific commit given its hash without editing commit message?", "expected": "git revert --no-edit"}
+{"id": 14, "category": "factual", "question": "What HTTP status code represents rate limiting in OpenAI-compatible APIs?", "expected": "429"}
+{"id": 15, "category": "code", "question": "In Pydantic v2, what method replaces .dict() for serializing models?", "expected": "model_dump"}
+{"id": 16, "category": "reasoning", "question": "Why does Lantern use hysteresis in connectivity detection?", "expected": "prevent flapping between online and offline states"}
+{"id": 17, "category": "factual", "question": "What environment variable forces Lantern into offline mode?", "expected": "LANTERN_FORCE_OFFLINE"}
+{"id": 18, "category": "command", "question": "How do you list all models currently downloaded locally in Ollama?", "expected": "ollama list"}
+{"id": 19, "category": "code", "question": "What Python standard library module is used for running external git commands?", "expected": "subprocess"}
+{"id": 20, "category": "factual", "question": "What header specifies the waiting duration when receiving a 429 Too Many Requests response?", "expected": "Retry-After"}

@@ -1,0 +1,59 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# C extensions
+*.so
+
+# Distribution / packaging
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual environments
+.venv/
+venv/
+ENV/
+env/
+
+# Environment files and credentials (CRITICAL)
+.env
+.env.local
+*.env
+
+# SQLite databases & runtime storage
+*.db
+*.sqlite
+*.sqlite3
+lantern.db
+eval_test.db
+eval/eval_results.json
+
+# Pytest / coverage
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Local archives
+*.zip
+lantern-handoff-pack.zip
+
+# IDEs & OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

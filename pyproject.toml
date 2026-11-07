@@ -1,0 +1,29 @@
+[project]
+name = "lantern"
+version = "0.1.0"
+description = "Offline-first AI teammate for team chat via Switch"
+requires-python = ">=3.11"
+dependencies = [
+    "httpx>=0.27,<1",
+    "pydantic>=2.5,<3",
+    "python-dotenv>=1.0,<2",
+    "pyyaml>=6.0,<7",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0,<9",
+    "pytest-asyncio>=0.24,<1",
+    "respx>=0.22,<1",
+]
+
+[project.scripts]
+lantern = "lantern.main:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
