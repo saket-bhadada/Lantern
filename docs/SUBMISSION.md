@@ -58,3 +58,4 @@ Switch is the central nervous system connecting Lantern to human chat environmen
 1. **Local Channel Document Retrieval:** Augment Ollama with local embeddings over pinned channel documents and READMEs.
 2. **Multi-Turn Thread Summarization:** Provide one-click summaries of lengthy offline discussions when disconnected teammates catch up.
 3. **Cross-Platform Switch Adapters:** Leverage Switch's multi-bridge architecture to expand Lantern into Slack, Discord, and Telegram without modifying agent core logic.
+
