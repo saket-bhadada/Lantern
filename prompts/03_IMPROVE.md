@@ -1,1 +1,0 @@
-Review the repo against docs/ANALYSIS.md. List which risks are still open (use the table numbers), pick the two highest-impact ones, propose the smallest fix for each, and wait for my approval before editing. Do not refactor working code.
