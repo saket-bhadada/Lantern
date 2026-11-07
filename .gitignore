@@ -52,6 +52,10 @@ htmlcov/
 *.zip
 lantern-handoff-pack.zip
 
+# Logs
+logs/
+*.log
+
 # IDEs & OS
 .vscode/
 .idea/

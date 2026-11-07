@@ -186,7 +186,20 @@ class RuleStore:
         """
         if not self._approver_ids:
             return True
-        return user_id in self._approver_ids
+        if user_id in self._approver_ids:
+            return True
+        # Handle Switch composite IDs (e.g. @switch-mattermost-{uuid}-{user}:localhost)
+        for app_id in self._approver_ids:
+            if not app_id:
+                continue
+            if (
+                user_id.endswith(f"-{app_id}:localhost")
+                or user_id.endswith(f"-{app_id}")
+                or f"-{app_id}:" in user_id
+                or user_id == app_id
+            ):
+                return True
+        return False
 
     def rules_for_prompt(self) -> str:
         """Format active rules for injection into the system prompt."""

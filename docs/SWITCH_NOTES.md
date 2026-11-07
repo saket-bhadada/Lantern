@@ -14,15 +14,18 @@ Status legend: CONFIRMED = seen in a primary source; UNVERIFIED = secondhand sum
 | 6 | Standalone all-Docker: `just standalone-up` uses `deploy/local/` compose file. | repo README |
 | 7 | Switch Console desktop app available (Win/Mac/Linux) from GitHub Releases. Bundles `switch-buddy` assistant. Can point at a local server at `http://localhost:8000`. | GitHub Releases page, docs.switchagents.ai |
 | 8 | Agents are registered in the Console under **Your Agents**: name (lowercase, hyphens, underscores), description, brief/instructions. Registration generates an **API key**. | docs.switchagents.ai |
-| 9 | Agent auth header: `Authorization: ApiKey <key>`. | GitHub source |
+| 9 | Agent auth header: `Authorization: Bearer <key>` (verified in switch_core BearerAuthMiddleware). | Primary probe / switch_core source |
 | 10 | Downstream events via **SSE stream** (or WebSocket); upstream actions via **HTTP POST** to switch-core. | GitHub source, docs.switchagents.ai |
 | 11 | Message envelopes use `BEGIN / END SWITCH MESSAGE` markers with per-message cryptographic nonce (prompt-injection defence). | GitHub source |
-| 12 | Agent placement: `POST /agents/{agent_id}/connection/placements` to declare room presence. | GitHub source |
+| 12 | Agent placement: `POST /agents/{agent_id}/connection/placements` or pass `&rooms={room_ids}` in SSE query params to claim rooms. | switch_core source & live verification |
 | 13 | Thread replies supported: events carry `thread_id` / `root_id` / `parent_id`; agent can reply in-thread by including them. | GitHub source, web search |
 | 14 | switch-core does **not** phone home at startup. Telemetry is **off by default** (`TELEMETRY_ENABLED=false`). No licence-key server. | GitHub repo (env config), web search |
 | 15 | Switch supplies no model inference. You bring the agent + model. | flintai.dev listing |
 | 16 | Agent has lowercase `name` for routing and optional `display_name`. Mattermost shows display_name only if `TeamSettings.TeammateNameDisplay` ≠ `username`. | repo PR #347 |
 | 17 | Docs MCP endpoint: `https://docs.switchagents.ai/mcp` (HTTP transport). | docs.switchagents.ai |
+| 18 | SSE endpoint: `GET /agents/{name}/events?connection_id={uuid}&scope=all&rooms={ids}`. Room claim on connect is required for Switch to route room events. | Primary probe |
+| 19 | Heartbeat: `POST /agents/{name}/connection/beat` with `{"connection_id": "<uuid>"}` every ~8s keeps the SSE session alive. | Primary probe |
+| 20 | Mattermost Adapter loop guard: `if user_id in self._bridge_bot_ids or user_id == self._admin_user_id: return` (`mattermost/adapter.py:2815`). Messages sent by the Mattermost `admin` account are ignored by design. Human chat testing must use a regular user account (`user`). | switch_core source & primary probe |
 
 ## Still UNKNOWN (will resolve in Phase 1 by running the stack)
 

@@ -52,7 +52,7 @@ _DEFAULT_CLOUD_PROVIDERS = [
         name="gemini",
         base_url="https://generativelanguage.googleapis.com/v1beta/openai/",
         api_key_env="GEMINI_API_KEY",
-        model="gemini-2.0-flash",
+        model=os.getenv("GEMINI_MODEL", "gemini-3.5-flash"),
         daily_limit=50,
     ),
     CloudProvider(

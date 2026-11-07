@@ -108,7 +108,7 @@ class VerifyWorker:
             self._db.mark_verified(item.id, verdict)  # type: ignore[arg-type]
 
             # Post follow-up in thread
-            reply_text = self._format_followup(verdict, completion.model)
+            reply_text = self._format_followup(verdict, completion)
             thread = item.root_id or item.thread_id or item.event_id
             await self._switch.send_message(
                 item.channel_id,
@@ -141,8 +141,14 @@ class VerifyWorker:
                 reason="Could not parse verification result",
             )
 
-    def _format_followup(self, verdict: Verdict, model: str) -> str:
-        tag = f"☁️ {model}"
+    def _format_followup(self, verdict: Verdict, model_or_comp: str | Completion) -> str:
+        if isinstance(model_or_comp, Completion):
+            if model_or_comp.tier == "cloud":
+                tag = f"☁️ {model_or_comp.model}"
+            else:
+                tag = f"🧠 local · {model_or_comp.model}"
+        else:
+            tag = f"☁️ {model_or_comp}"
         if verdict.verdict == VerdictChoice.confirmed:
             return f"✅ Verified online — {verdict.reason}\n\n_{tag}_"
         elif verdict.verdict == VerdictChoice.minor_issue:

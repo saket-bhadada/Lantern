@@ -40,7 +40,8 @@ class OllamaBrain:
             "model": self._model,
             "messages": [m.model_dump() for m in messages],
             "stream": False,
-            "options": {"temperature": temperature},
+            "options": {"temperature": temperature, "num_ctx": 4096},
+            "keep_alive": "30m",
         }
         if schema:
             payload["format"] = schema

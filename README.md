@@ -1,141 +1,97 @@
-# 🏮 Lantern
+# 🏮 Lantern — Offline-First AI Teammate for Team Chat
 
-An offline-first AI teammate for team chat via the open-source **Switch** infrastructure ([sandbox-quantum/switch](https://github.com/sandbox-quantum/switch)).
+An offline-first, local-reasoning AI teammate that lives in team chat via **Switch**. Lantern runs completely free on local Ollama, keeps working through network drops, automatically verifies risky offline advice once reconnected, and learns team rules with human approver governance and an atomic Git audit trail. Built for WeMakeDevs x DevTools Academy x Switch "Flip the Switch" Hackathon.
 
-> **Project Brief & Handoff History:**  
-> - **Phase 0 Discovery & Foundation:** Completed machine inspection, Switch protocol probing, and core architectural skeleton.  
-> - **Opus 4.6 Handoff Point:** Claude Opus 4.6 implemented the initial foundation up through the postprocessor pipeline (`postprocessors.py`), database (`db.py`), brain router (`router.py`), verify worker (`verify.py`), rule store (`rules.py`), and Switch client (`switch_client.py`).  
-> - **Continued & Completed Implementation:** Gemini 3.8 Flash resumed directly from `postprocessors.py`, implementing:
->   - Protocol interfaces & pipeline context (`interfaces.py`)
->   - Pluggable extension registry (`registry.py`)
->   - Ping, Status, and Rule command handlers (`addons/ping_cmd.py`, `addons/status_cmd.py`, `addons/rule_cmds.py`)
->   - LLM structured-output Correction Detector (`correction_detector.py`)
->   - System persona & delimited learned-rules prompt assembler (`prompts.py`)
->   - Central message processing pipeline (`engine.py`) and CLI entrypoint (`main.py`)
->   - Preflight diagnostic utility (`scripts/preflight.py`)
->   - 20-question evaluation benchmark and automated scorer (`eval/questions.jsonl`, `eval/score.py`)
->   - Comprehensive unit test suite (`tests/`) and full architecture, pitch, and demo documentation.
+🎥 **[Watch the 3-Minute Demo Video](https://youtube.com/)** *(placeholder)*
 
 ---
 
-## 🚀 Key Features
+## ⚡ Why Switch is Central
 
-1. **Joins Mattermost via Switch:** Speaks the Switch Agent Client Protocol (HTTP POST upstream, SSE downstream) and replies to mentions, DMs, and active threads.
-2. **Transparent Brain Tiers:**
-   - 🧠 **Local Tier:** Runs on local Ollama (`qwen2.5:7b`), zero cost, works with network disconnected.
-   - ☁️ **Cloud Tier:** Utilizes free OpenAI-compatible cloud models (Gemini, Groq, OpenRouter) with daily quota counters in SQLite and automatic fallback.
-   - Every reply is explicitly tagged: `_🧠 local · qwen2.5:7b_` or `_☁️ gemini_`.
-3. **Double-Check Verify Queue:**
-   - Risky offline advice (commands, numbers, instructions) is flagged with an upfront warning banner and queued in SQLite.
-   - When connectivity is restored, an asynchronous judge evaluates the answer and posts a follow-up in the thread (`✅ Verified online` or `⚠️ Correction: ...`).
-4. **Teachable Rules with Git Governance:**
-   - Corrections or explicit `teach: <rule>` commands create proposed rules.
-   - Authorized approvers (matched by platform user ID) approve or reject.
-   - Approved rules are committed atomically to `lessons/RULES.md` in Git.
-   - `forget <id>` executes a clean `git revert`.
-5. **Commands:**
-   - `@lantern ping`: Responds `pong`.
-   - `status`: Displays network state, active tier, active model, pending verify queue count, cloud usage, and active rule count.
-   - `rules`: Lists active and pending learned rules.
-   - `teach: <rule>`: Proposes a new guideline.
-   - `approve <id>` / `reject <id>` / `forget <id>`: Manages learned rules.
+Lantern cannot exist as a team chat member without **Switch** ([sandbox-quantum/switch](https://github.com/sandbox-quantum/switch)). Without Switch:
+1. **No Agent Client Protocol (ACP):** Lantern has no raw chat sockets; it relies entirely on Switch's standard HTTP POST / SSE stream.
+2. **No Multi-Platform Room Bridge:** Switch abstracts Mattermost channels into unified rooms; without it, local chat connectivity fails.
+3. **No Verifiable Agent Identity:** Switch enforces cryptographic event markers and per-agent routing tokens.
+4. **No Secure Governance:** Switch provides authentic platform user IDs (`@switch-...-username`) that Lantern uses to enforce approver allow-lists for teachable rules, ensuring chat text can never spoof human approvals.
+
+| Switch Capability | How Lantern Uses It |
+|---|---|
+| **ACP SSE Stream** (`GET /agents/{name}/events`) | Real-time downstream event listener with room subscription and heartbeat (`POST /connection/beat`). |
+| **ACP Message Dispatch** (`POST /agents/{name}/message`) | Unified upstream reply delivery to specific channels and message threads. |
+| **Room Placement** (`/ops/list_rooms`) | Discovers bridged Mattermost channels (`#lantern-demo`, `Town Square`) on connect. |
+| **Platform Sender Identity** | Authenticates rule approvers by verified platform user ID (`user`, `admin`). |
 
 ---
 
-## 📦 Directory Structure
+## 💰 The $0 Software Stack
 
-```text
-d:\project\Lantern
-├── .env.example              # Environment variables template
-├── pyproject.toml            # Package configuration
-├── lantern.db                # SQLite store (queue, quotas)
-├── lessons/                  # Git-backed learned rules
-│   └── RULES.md
-├── src/lantern/
-│   ├── config.py             # Settings loader (.env + config.yaml)
-│   ├── models.py             # Pydantic data schemas
-│   ├── log.py                # Structured JSON logging
-│   ├── switch_client.py      # Switch ACP HTTP/SSE client
-│   ├── brain.py              # Brain protocol definition
-│   ├── router.py             # Tier manager & fallback routing
-│   ├── connectivity.py       # Connectivity monitor with hysteresis
-│   ├── db.py                 # SQLite database helper
-│   ├── verify.py             # Async background verifier
-│   ├── rules.py              # Git-backed rule store
-│   ├── postprocessors.py     # Provenance, Risk caution, Queueing
-│   ├── interfaces.py         # Extension protocols & Ctx
-│   ├── registry.py           # Add-on registry
-│   ├── correction_detector.py# Structured correction analyzer
-│   ├── prompts.py            # System prompt assembler
-│   ├── engine.py             # Main processing pipeline
-│   ├── main.py               # Application entrypoint
-│   └── addons/
-│       ├── ollama_brain.py   # Ollama integration
-│       ├── cloud_brains.py   # OpenAI-compatible cloud integration
-│       ├── ping_cmd.py       # Ping command
-│       ├── status_cmd.py     # Status command
-│       └── rule_cmds.py      # Rule management commands
-├── scripts/
-│   └── preflight.py          # Preflight diagnostic checks
-├── eval/
-│   ├── questions.jsonl       # 20 evaluation benchmark questions
-│   └── score.py              # Benchmark execution script
-├── tests/                    # Pytest test suite
-└── docs/
-    ├── ARCHITECTURE.md       # Architecture & Mermaid diagram
-    ├── DEMO_SCRIPT.md        # 3-minute live demonstration flow
-    ├── PITCH.md              # Project pitch & honest limits
-    ├── SWITCH_NOTES.md       # Switch integration facts & protocol reference
-    ├── DECISIONS.md          # Architectural decisions log
-    └── EXTENSIONS.md         # Add-on extension contract
-```
+- **Switch Core & Gateway:** Open-source agent runtime & bridge ([sandbox-quantum/switch](https://github.com/sandbox-quantum/switch)).
+- **Chat Server:** Mattermost Team Edition (bundled directly inside Switch local Docker stack).
+- **Local Brain:** [Ollama](https://ollama.com/) with `qwen2.5:7b` (4-bit, 4.7 GB, optimized for 6 GB VRAM with `num_ctx=4096`).
+- **Cloud Brain (Optional):** Free-tier OpenAI-compatible API (Google Gemini `gemini-3.5-flash`, Groq, or OpenRouter).
+- **Persistence:** Python stdlib SQLite (`lantern.db`) & Git-backed markdown (`lessons/RULES.md`).
 
 ---
 
-## 🛠️ Quick Start
+## 🛠️ Reproduce in 10 Steps (Windows / macOS / Linux)
 
-### 1. Python Environment Setup
-```powershell
-# Create venv and install
-python -m venv .venv
-.\.venv\Scripts\Activate.ps1
-pip install -e ".[dev]"
-```
-
-### 2. Environment Configuration
-Copy `.env.example` to `.env` and fill in:
-```env
-SWITCH_CORE_URL=http://localhost:8000
-SWITCH_AGENT_API_KEY=<your-agent-key-from-switch-console>
-LANTERN_AGENT_NAME=lantern
-OLLAMA_URL=http://localhost:11434
-LANTERN_LOCAL_MODEL=qwen2.5:7b
-LANTERN_APPROVER_IDS=admin_user_id
-```
-
-### 3. Run Preflight Checks
-```powershell
-python scripts/preflight.py
-```
-
-### 4. Run Test Suite
-```powershell
-pytest tests -v
-```
-
-### 5. Launch Lantern
-```powershell
-python -m lantern.main
-```
-
----
-
-## 🔌 Running with Switch & Mattermost
-1. Start Docker Desktop.
-2. In the `switch` repository:
-   ```bash
-   just init-env
-   just standalone-up
+1. **Clone Lantern:** `git clone https://github.com/anirudh-garg/Lantern.git d:\Projects\Lantern && cd d:\Projects\Lantern`
+2. **Set up Python (3.11+):** `python -m venv .venv && .\.venv\Scripts\activate && pip install -e ".[dev]"`
+3. **Run Unit Tests:** `pytest tests -v` *(All 14 tests pass)*
+4. **Configure Local Env:** `cp .env.example .env` *(Set `OLLAMA_URL=http://localhost:11434` and `LANTERN_LOCAL_MODEL=qwen2.5:7b`)*
+5. **Verify Local Ollama:** Ensure Ollama is running and has `ollama pull qwen2.5:7b`.
+6. **Clone & Launch Switch:** In sibling folder `d:\Projects\switch`:
+   ```powershell
+   git clone https://github.com/sandbox-quantum/switch ..\switch && cd ..\switch
+   just init-env && just standalone-up
    ```
-3. Open Switch Console (`http://localhost:8000`), register agent `lantern`, and copy the API key into `.env`.
-4. Open Mattermost (`http://localhost:8065`), create `#lantern-demo`, and mention `@lantern ping`.
+7. **Register Agent:** Open Switch Gateway at `http://localhost:3000` (or `http://localhost:8000`). Go to **Agents** → **Register Agent**, name: `lantern`, copy the API key into `.env` (`SWITCH_AGENT_API_KEY=...`).
+8. **Join Channel:** Open Mattermost at `http://localhost:8065`, create `#lantern-demo`. In Switch, assign `lantern` to the `#lantern-demo` room.
+9. **Set Approver ID:** In `.env`, set `LANTERN_APPROVER_IDS=user,admin`.
+10. **Start Lantern:** `python -m lantern.main` and chat with `@lantern ping` in Mattermost!
+
+---
+
+## 💬 Commands & Core Features
+
+| Command | Action | Provenance / Evidence |
+|---|---|---|
+| `@lantern ping` | Heartbeat & ping-pong check | Replies `pong` |
+| `@lantern <question>` | Context-aware Q&A | Tagged `_🧠 local · qwen2.5:7b_` or `_☁️ gemini-3.5-flash_` |
+| `@lantern status` | Inspect system health | Shows Network, Active Tier, Model, Queue length, Quotas, Rules |
+| `@lantern teach: <rule>` | Propose new project rule | Proposes `R-001` awaiting human approval |
+| `@lantern approve <id>` | Commit rule to Git | Commits to `lessons/RULES.md` (`git log -1` shows atomic commit) |
+| `@lantern rules` | List team memory | Displays active and pending learned rules |
+| `@lantern forget <id>` | Cleanly roll back rule | Automatically executes atomic `git revert` on the rule commit |
+
+```
+               [ Mattermost #lantern-demo ]
+                           │
+                           ▼ (WebSocket)
+            [ Switch Core (Docker :8000) ]
+                           │
+             (ACP HTTP/SSE)│
+                           ▼
+                  [ Lantern Engine ]
+                    ├── Connectivity Check (online / offline)
+                    ├── Brain Router ──► Local Ollama (qwen2.5:7b)
+                    │                └──► Cloud (Gemini 3.5 Flash)
+                    ├── Risk Caution Banner & SQLite Verify Queue
+                    └── Teachable Rules Store (Git-backed RULES.md)
+```
+
+---
+
+## 📷 Screenshots
+
+| Chat Interaction & Proof of Provenance | Git Audit Trail & Approvals |
+|---|---|
+| ![Mattermost Chat](docs/img/chat-demo.png) *(placeholder)* | ![Git Rules Audit](docs/img/git-audit.png) *(placeholder)* |
+
+---
+
+## ⚠️ Honest Limitations
+
+- **7B Local Model Boundaries:** `qwen2.5:7b` is fast and offline-capable, but can hallucinate technical commands. Lantern addresses this through the **Risk Caution Banner** and asynchronous **Cloud Verify Queue**.
+- **Free-Tier Cloud Quotas:** Free cloud APIs enforce rate limits (e.g. 50/day). Lantern enforces daily SQLite quotas with graceful fallback to Ollama.
+- **Tested Environment:** Tested and verified on Windows 11 with Docker Desktop 29.2, Git 2.50, and Ollama with 6 GB VRAM. Requires non-admin user account in Mattermost due to Switch bridge loop-prevention filters.

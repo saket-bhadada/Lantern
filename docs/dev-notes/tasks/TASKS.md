@@ -7,9 +7,9 @@
 - [x] Plan, risk list, exact human steps (commands + GUI clicks in artifact `phase0-plan.md`)
 
 ## Phase 1: Walking skeleton  [STOP after]
-- [ ] Mattermost Team Edition + Switch local via Docker Compose (Awaiting human Docker launch & standalone-up)
+- [x] Mattermost Team Edition + Switch local via Docker Compose (Stack running and healthy on :8000 and :8065)
 - [x] Lantern client, ACP SSE/HTTP adapter, ping/pong command handler & pipeline built: [src/lantern/addons/ping_cmd.py](file:///d:/project/Lantern/src/lantern/addons/ping_cmd.py), [tests/test_commands.py](file:///d:/project/Lantern/tests/test_commands.py)
-- [ ] Live reply `pong` verified in #lantern-demo against running Docker stack
+- [x] Live reply `pong` verified in #lantern-demo against running Docker stack (Tested with live SSE & Mattermost bridge)
 
 ## Phase 2: Local brain
 - [x] Interfaces + models + registry: [docs/EXTENSIONS.md](file:///d:/project/Lantern/docs/EXTENSIONS.md), [src/lantern/brain.py](file:///d:/project/Lantern/src/lantern/brain.py), [src/lantern/interfaces.py](file:///d:/project/Lantern/src/lantern/interfaces.py), [src/lantern/registry.py](file:///d:/project/Lantern/src/lantern/registry.py)

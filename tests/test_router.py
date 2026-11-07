@@ -34,3 +34,14 @@ async def test_router_local_when_offline():
     assert res.text == "Local answer"
     assert res.tier == "local"
     assert router.current_tier == "local"
+
+
+@pytest.mark.asyncio
+async def test_connectivity_force_offline():
+    settings = Settings(force_offline=True)
+    mon = ConnectivityMonitor(settings)
+    assert mon.is_online is False
+    assert await mon.check_once() is False
+    await mon.start()
+    assert mon.is_online is False
+    await mon.stop()

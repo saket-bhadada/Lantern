@@ -34,7 +34,7 @@ class ProvenancePostprocessor:
             if c.tier == "local":
                 reply.provenance_tag = f"🧠 local · {c.model}"
             else:
-                reply.provenance_tag = f"☁️ {c.provider}"
+                reply.provenance_tag = f"☁️ {c.model}" if c.model else f"☁️ {c.provider}"
             reply.text = f"{reply.text}\n\n_{reply.provenance_tag}_"
         return reply
 

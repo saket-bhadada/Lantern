@@ -3,6 +3,7 @@
 Handles:
 - SSE event stream (downstream from switch-core)
 - HTTP POST for sending messages (upstream to switch-core)
+- Connection heartbeat
 - Event deduplication
 """
 
@@ -11,6 +12,7 @@ from __future__ import annotations
 import asyncio
 import json
 import time
+import uuid
 from collections import OrderedDict
 from typing import AsyncIterator
 
@@ -32,12 +34,15 @@ class SwitchClient:
     def __init__(self, settings: Settings) -> None:
         self._settings = settings
         self._base = settings.switch_core_url.rstrip("/")
+        # Switch accepts Bearer authentication for Agent API Keys
         self._headers = {
-            "Authorization": f"ApiKey {settings.switch_agent_api_key}",
+            "Authorization": f"Bearer {settings.switch_agent_api_key}",
             "Content-Type": "application/json",
         }
         self._seen_ids: OrderedDict[str, None] = OrderedDict()
         self._http: httpx.AsyncClient | None = None
+        self._connection_id = str(uuid.uuid4())
+        self._beat_task: asyncio.Task | None = None
 
     # ------------------------------------------------------------------
     # Lifecycle
@@ -52,14 +57,52 @@ class SwitchClient:
         log.info("Switch client started", extra={"tier": "switch"})
 
     async def stop(self) -> None:
+        if self._beat_task and not self._beat_task.done():
+            self._beat_task.cancel()
         if self._http:
             await self._http.aclose()
             self._http = None
         log.info("Switch client stopped")
 
     # ------------------------------------------------------------------
+    # Heartbeat
+    # ------------------------------------------------------------------
+
+    async def _heartbeat_loop(self, agent_name: str, interval: float = 8.0) -> None:
+        """Periodically ping Switch Core to keep the connection alive."""
+        while True:
+            try:
+                await asyncio.sleep(interval)
+                if self._http:
+                    await self._http.post(
+                        f"/agents/{agent_name}/connection/beat",
+                        json={"connection_id": self._connection_id},
+                    )
+            except asyncio.CancelledError:
+                break
+            except Exception as exc:
+                log.debug("Heartbeat error: %s", exc)
+
+    # ------------------------------------------------------------------
     # SSE listener
     # ------------------------------------------------------------------
+
+    async def _fetch_room_ids(self) -> list[str]:
+        """Fetch all rooms assigned to this agent from Switch."""
+        if not self._http:
+            return []
+        try:
+            resp = await self._http.post(
+                f"/agents/{self._settings.agent_name}/ops/list_rooms",
+                json={},
+            )
+            if resp.status_code == 200:
+                data = resp.json()
+                rooms = data.get("result", [])
+                return [r["room_id"] for r in rooms if "room_id" in r]
+        except Exception as exc:
+            log.warning("Could not list rooms: %s", exc)
+        return []
 
     async def listen(self) -> AsyncIterator[ChatEvent]:
         """Yield ChatEvent objects from the Switch SSE stream.
@@ -68,20 +111,35 @@ class SwitchClient:
         """
         agent_name = self._settings.agent_name
         backoff = 1.0
+
+        # Start background heartbeat loop
+        if not self._beat_task or self._beat_task.done():
+            self._beat_task = asyncio.create_task(
+                self._heartbeat_loop(agent_name)
+            )
+
         while True:
             try:
+                # Discover rooms assigned to this agent so stream claims them
+                room_ids = await self._fetch_room_ids()
+                rooms_param = f"&rooms={','.join(room_ids)}" if room_ids else ""
+
                 async with httpx.AsyncClient(
                     base_url=self._base,
                     headers=self._headers,
                     timeout=httpx.Timeout(None, connect=15.0),
                 ) as sse_client:
-                    log.info("Connecting to SSE stream…")
+                    log.info("Connecting to SSE stream…", extra={"rooms": len(room_ids)})
+                    stream_url = (
+                        f"/agents/{agent_name}/events"
+                        f"?connection_id={self._connection_id}&scope=all{rooms_param}"
+                    )
                     async with sse_client.stream(
-                        "GET", "/events", headers={"Accept": "text/event-stream"}
+                        "GET", stream_url, headers={"Accept": "text/event-stream"}
                     ) as resp:
                         resp.raise_for_status()
                         backoff = 1.0  # reset on success
-                        log.info("SSE stream connected")
+                        log.info("SSE stream connected", extra={"rooms": room_ids})
                         async for event in self._parse_sse(resp):
                             if event and not self._is_duplicate(event.id):
                                 yield event
@@ -123,28 +181,47 @@ class SwitchClient:
             log.debug("Skipping SSE event type=%s", event_type)
             return None
 
-        # Extract fields – adapt to whatever schema Switch actually uses.
-        # The field names below are our best-effort from docs; Phase 1 will
-        # validate against the real stream and we'll adjust.
-        msg = payload.get("message", payload)
-        sender = payload.get("sender", {})
         agent_name = self._settings.agent_name
 
-        text = msg.get("text", "") if isinstance(msg, dict) else str(msg)
+        # Handle Switch AgentEvent model: { "room_id": "...", "payload": { "body": "...", ... } }
+        inner_payload = payload.get("payload")
+        if isinstance(inner_payload, dict):
+            text = str(inner_payload.get("body", ""))
+            sender_id = str(inner_payload.get("sender", ""))
+            sender_name = str(inner_payload.get("sender_name", ""))
+            sender_kind = str(inner_payload.get("sender_kind", "user"))
+            channel_id = str(payload.get("room_id", ""))
+            event_id = str(inner_payload.get("message_id", f"ev-{time.time()}"))
+            thread_id = inner_payload.get("thread_id")
+            addressed = bool(inner_payload.get("addressed", False))
+            is_bot = sender_kind == "agent"
+        else:
+            msg = payload.get("message", payload)
+            sender = payload.get("sender", {})
+            text = msg.get("text", "") if isinstance(msg, dict) else str(msg)
+            sender_id = str(sender.get("id", sender.get("user_id", "")))
+            sender_name = str(sender.get("name", sender.get("username", "")))
+            channel_id = str(payload.get("channel_id", payload.get("room_id", "")))
+            event_id = str(payload.get("id", payload.get("message_id", f"ev-{time.time()}")))
+            thread_id = payload.get("thread_id")
+            addressed = False
+            is_bot = bool(sender.get("is_bot", False))
+
+        is_mention = addressed or (f"@{agent_name}" in text.lower())
 
         event = ChatEvent(
-            id=str(payload.get("id", payload.get("message_id", f"ev-{time.time()}"))),
-            channel_id=str(payload.get("channel_id", payload.get("room_id", ""))),
+            id=event_id,
+            channel_id=channel_id,
             channel_name=str(payload.get("channel_name", "")),
-            sender_id=str(sender.get("id", sender.get("user_id", ""))),
-            sender_name=str(sender.get("name", sender.get("username", ""))),
+            sender_id=sender_id,
+            sender_name=sender_name,
             text=text,
-            thread_id=payload.get("thread_id"),
+            thread_id=thread_id,
             root_id=payload.get("root_id"),
             parent_id=payload.get("parent_id"),
-            is_mention=f"@{agent_name}" in text.lower(),
+            is_mention=is_mention,
             is_dm=bool(payload.get("is_dm", False)),
-            is_bot=bool(sender.get("is_bot", False)),
+            is_bot=is_bot,
             raw=payload,
         )
         return event
@@ -174,16 +251,22 @@ class SwitchClient:
             log.error("Cannot send – client not started")
             return False
 
-        body: dict = {"message": {"text": text}}
-        if thread_id:
-            body["thread_id"] = thread_id
-        if root_id:
-            body["root_id"] = root_id
+        agent_name = self._settings.agent_name
+        body = {
+            "room_id": channel_id,
+            "content": text,
+        }
+        if thread_id or root_id:
+            body["metadata"] = {}
+            if thread_id:
+                body["metadata"]["thread_id"] = thread_id
+            if root_id:
+                body["metadata"]["root_id"] = root_id
 
         try:
-            # Try the likely endpoint; Phase 1 will confirm the exact path.
+            # Switch API route for sending messages
             resp = await self._http.post(
-                f"/rooms/{channel_id}/messages",
+                f"/agents/{agent_name}/message",
                 json=body,
             )
             if resp.status_code >= 400:
