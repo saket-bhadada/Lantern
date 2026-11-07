@@ -13,7 +13,7 @@ from lantern.config import Settings
 from lantern.connectivity import ConnectivityMonitor
 from lantern.db import Database
 from lantern.log import get_logger
-from lantern.models import Msg, QueueItem, Verdict, VerdictChoice
+from lantern.models import Completion, Msg, QueueItem, Verdict, VerdictChoice
 from lantern.router import BrainRouter
 from lantern.switch_client import SwitchClient
 
