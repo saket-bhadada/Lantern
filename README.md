@@ -82,11 +82,10 @@ Lantern cannot exist as a team chat member without **Switch** ([sandbox-quantum/
 
 ---
 
-## 📷 Screenshots
+## 📷 Demo Preview
 
-| Chat Interaction & Proof of Provenance | Git Audit Trail & Approvals |
-|---|---|
-| ![Mattermost Chat](docs/img/chat-demo.png) *(placeholder)* | ![Git Rules Audit](docs/img/git-audit.png) *(placeholder)* |
+![Mattermost Chat & Provenance](docs/img/chat-demo.png)
+*Live interaction in Mattermost showing local model provenance (`_🧠 local · qwen2.5:7b_`), heartbeat check, and status.*
 
 ---
 
