@@ -52,6 +52,35 @@ Lantern cannot exist as a team chat member without **Switch** ([sandbox-quantum/
 
 ---
 
+## 🚀 How to Use
+
+Once Lantern and Switch are running, open your team chat (e.g., Mattermost `#lantern-demo` using the `user` account):
+
+### 1. Daily Team Q&A (Local & Cloud)
+Mention `@lantern` with any technical question:
+> **You:** `@lantern What is the difference between git merge and git rebase?`  
+> **Lantern:** *[Concise explanation]*  
+> `_🧠 local · qwen2.5:7b_` *(or `_☁️ gemini-3.5-flash_` when online)*
+
+### 2. Offline Resilience & Cloud Verification
+When offline (or test with `LANTERN_FORCE_OFFLINE=1` in `.env`):
+1. Ask a question containing shell commands, network configs, or dependencies.
+2. Lantern answers immediately with an upfront safety banner:  
+   `> ⚠️ **Caution: Local model advice (offline). Verification queued.**`
+3. As soon as internet connectivity returns, Lantern's background worker automatically fact-checks the answer and posts an in-thread verification:  
+   `> 🔍 **Follow-up Verification:** [confirmed] Fact-check confirmed the local advice.`
+
+### 3. Teachable Rules (Git-Audited Memory)
+Establish and govern team operating rules directly from chat:
+1. **Propose:** `@lantern teach: always run pytest before committing`  
+   *(Lantern logs proposal `R-001` awaiting human approval)*
+2. **Approve:** `@lantern approve R-001`  
+   *(Authorized approver confirms; Lantern writes and atomically commits to `lessons/RULES.md`)*
+3. **Inspect:** Check terminal with `git log -1` to see the cryptographic commit and author.
+4. **Revert:** `@lantern forget R-001` *(Lantern automatically triggers an atomic `git revert`)*
+
+---
+
 ## 💬 Commands & Core Features
 
 | Command | Action | Provenance / Evidence |
